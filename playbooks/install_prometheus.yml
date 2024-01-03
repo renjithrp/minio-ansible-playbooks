@@ -15,15 +15,15 @@
         - curl
         - net-tools
 
-    - name: Create {{ prometheus.group }} group
+    - name: Create "{{ prometheus.group }}" group
       group:
-        name: {{ prometheus.group }}
+        name: "{{ prometheus.group }}"
         state: present
 
-    - name: Create {{ prometheus.user }} user
+    - name: Create "{{ prometheus.user }}" user
       user:
-        name: {{ prometheus.user }}
-        group: {{ prometheus.group }}
+        name: {{ prometheus.user }}"
+        group: {{ prometheus.group }}"
         system: yes
         shell: /sbin/nologin
 
@@ -41,8 +41,8 @@
         path: "/etc/prometheus/{{ item }}"
         state: directory
         mode: "0775"
-        owner: {{ prometheus.user }}
-        group: {{ prometheus.group }}
+        owner: "{{ prometheus.user }}"
+        group: "{{ prometheus.group }}"
       loop:
         - rules
         - rules.d
@@ -57,8 +57,8 @@
       ansible.builtin.file:
         path: /tmp/prometheus
         state: directory
-        owner: {{ prometheus.user }}
-        group: {{ prometheus.group }}
+        owner: "{{ prometheus.user }}"
+        group: "{{ prometheus.group }}"
 
     - name: Download Prometheus release
       ansible.builtin.shell: |
@@ -99,8 +99,8 @@
     - name: Set ownership for Prometheus directories
       ansible.builtin.file:
         path: "/etc/prometheus/{{ item }}"
-        owner: {{ prometheus.user }}
-        group: {{ prometheus.group }}
+        owner: "{{ prometheus.user }}"
+        group: "{{ prometheus.group }}"
         recurse: yes
       loop:
         - rules
@@ -120,8 +120,8 @@
     - name: Set ownership for Prometheus data directory
       ansible.builtin.file:
         path: /var/lib/prometheus
-        owner: {{ prometheus.user }}
-        group: {{ prometheus.group }}
+        owner: "{{ prometheus.user }}"
+        group: "{{ prometheus.group }}"
         recurse: yes
 
     - name: Reload systemd
