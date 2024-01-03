@@ -1,0 +1,9 @@
+MINIO_VOLUMES="{{ minio.volumes }}"
+MINIO_OPTS="{{ minio.opts }}"
+MINIO_ROOT_USER="{{ minio.admin_user }}"
+MINIO_ROOT_PASSWORD="{{ minio.admin_password }}"
+MINIO_SERVER_URL="{{ minio.server_url }}"
+MINIO_PROMETHEUS_URL="{{ prometheus.scheme| default('http') }}://{{ groups['prometheus'] | first }}:{{ prometheus.port }}"
+MINIO_PROMETHEUS_JOB_ID="{{ minio.prometheus.job_id | default('minio-job') }}"
+#MINIO_STORAGE_CLASS_STANDARD=EC:0
+MINIO_BROWSER_REDIRECT_URL=http://{{ nginx.server_name }}:{{ nginx.port }}/minio/ui

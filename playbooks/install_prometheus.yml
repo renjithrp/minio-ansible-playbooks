@@ -1,0 +1,135 @@
+---
+- name: Install Prometheus
+  hosts: prometheus
+  become: true
+  vars_files:
+    - ../vars/variables.yml
+
+  tasks:
+    - name: Ensure unzip and curl are installed
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - unzip
+        - curl
+        - net-tools
+
+    - name: Create {{ prometheus.group }} group
+      group:
+        name: {{ prometheus.group }}
+        state: present
+
+    - name: Create {{ prometheus.user }} user
+      user:
+        name: {{ prometheus.user }}
+        group: {{ prometheus.group }}
+        system: yes
+        shell: /sbin/nologin
+
+    - name: Create /usr/local/bin directory
+      ansible.builtin.file:
+        path: /usr/local/bin
+        state: directory
+        mode: "0755"  # Adjust permissions as needed
+        owner: root
+        group: root
+      become: true
+
+    - name: Create directories for Prometheus
+      file:
+        path: "/etc/prometheus/{{ item }}"
+        state: directory
+        mode: "0775"
+        owner: {{ prometheus.user }}
+        group: {{ prometheus.group }}
+      loop:
+        - rules
+        - rules.d
+        - files_sd
+
+    - name: Remove /tmp/prometheus directory if exists
+      ansible.builtin.file:
+        path: /tmp/prometheus
+        state: absent
+
+    - name: Create /tmp/prometheus directory
+      ansible.builtin.file:
+        path: /tmp/prometheus
+        state: directory
+        owner: {{ prometheus.user }}
+        group: {{ prometheus.group }}
+
+    - name: Download Prometheus release
+      ansible.builtin.shell: |
+        mkdir -p /tmp/prometheus
+        cd /tmp/prometheus || exit 1
+        curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4 | wget -qi -
+        tar xvf prometheus*.tar.gz
+        extracted_dir=$(tar tzf /tmp/prometheus/prometheus*.tar.gz | head -1 | awk -F/ '{print $1}')
+        echo $extracted_dir > extracted_dir.txt
+      args:
+        executable: /bin/bash
+      delegate_to: localhost
+      register: download_prometheus
+
+    - name: Read the extracted directory name
+      ansible.builtin.slurp:
+        src: /tmp/prometheus/extracted_dir.txt
+      register: extracted_dir_content
+
+    - name: Install Prometheus binaries and configuration
+      ansible.builtin.shell: |
+        mv -f "/tmp/prometheus/{{ extracted_dir_content.content | b64decode | trim}}/prometheus" "/usr/local/bin/" &&
+        mv -f "/tmp/prometheus/{{ extracted_dir_content.content | b64decode | trim }}/promtool" "/usr/local/bin/" &&
+        mv -f "/tmp/prometheus/{{ extracted_dir_content.content | b64decode | trim }}/prometheus.yml" "/etc/prometheus/" &&
+        mv -f "/tmp/prometheus/{{ extracted_dir_content.content | b64decode | trim }}/consoles/" "/etc/prometheus/" &&
+        mv -f "/tmp/prometheus/{{ extracted_dir_content.content | b64decode | trim }}/console_libraries/" "/etc/prometheus/"
+      args:
+        executable: /bin/bash
+      become: true
+
+    - name: Create Prometheus service file
+      ansible.builtin.template:
+        src: ../templates/prometheus.service.j2
+        dest: /etc/systemd/system/prometheus.service
+      notify:
+        - Reload systemd
+
+    - name: Set ownership for Prometheus directories
+      ansible.builtin.file:
+        path: "/etc/prometheus/{{ item }}"
+        owner: {{ prometheus.user }}
+        group: {{ prometheus.group }}
+        recurse: yes
+      loop:
+        - rules
+        - rules.d
+        - files_sd
+
+    - name: Set permissions for Prometheus directories
+      ansible.builtin.file:
+        path: "/etc/prometheus/{{ item }}"
+        mode: "0775"
+        recurse: yes
+      loop:
+        - rules
+        - rules.d
+        - files_sd
+
+    - name: Set ownership for Prometheus data directory
+      ansible.builtin.file:
+        path: /var/lib/prometheus
+        owner: {{ prometheus.user }}
+        group: {{ prometheus.group }}
+        recurse: yes
+
+    - name: Reload systemd
+      ansible.builtin.command: systemctl daemon-reload
+
+    - name: Enable and start Prometheus service
+      ansible.builtin.service:
+        name: prometheus
+        enabled: yes
+        state: started
+

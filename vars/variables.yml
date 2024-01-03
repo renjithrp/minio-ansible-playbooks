@@ -1,0 +1,39 @@
+# variables.yml
+
+ansible:
+  user: "minio"
+  group: "minio"
+
+minio:
+  port: 9000
+  console_port: 9001
+  scheme: "http"
+  volumes: "http://minio{1...4}:9000/data/disk{1...4}/minio http://minio{5...8}:9000/data/disk{1...4}/minio"
+  opts: "--console-address :9001"
+  server_url: "http://nginx01:8080"
+  admin_user: "admin"
+  admin_password: "password"
+  alias: "minio-storage"
+  disks:
+    - /data/disk1
+    - /data/disk2
+    - /data/disk3
+    - /data/disk4
+  bucket: 
+    name: "bucket1"
+    username: "bucket1user"
+    password: "bucket1password"
+prometheus:
+  port: 9090
+  user: "prometheus"
+  group: "prometheus"
+
+nginx:
+  port: 8080
+  user: "nginx"
+  group: "nginx"
+  server_name: "nginx01"
+
+grafana:
+  admin_password: "password"
+

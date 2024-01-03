@@ -1,0 +1,60 @@
+---
+- name: Create MinIO Policy for Read-Write Access
+  hosts: prometheus
+  gather_facts: no
+  vars_files:
+    - ../vars/variables.yml
+  tasks:
+    - name: Create MinIO policy file
+      copy:
+        content: |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "s3:GetObject",
+                          "s3:PutObject",
+                          "s3:ListBucket",
+                          "s3:GetBucketLocation",
+                          "s3:PutObjectTagging",
+                          "s3:GetObjectTagging",
+                          "s3:DeleteObjectTagging",
+                          "s3:GetBucketTagging",
+                      ],
+                      "Resource": [
+                          "arn:aws:s3:::{{ minio.bucket.name }}",
+                          "arn:aws:s3:::{{ minio.bucket.name }}/*"
+                      ]
+                  }
+              ]
+          }
+        dest: "/tmp/read-write-access-policy.json"
+
+    - name: Add policy to MinIO server
+      shell: |
+        mc admin policy create {{ minio.alias }} read-write-policy_{{ minio.bucket.name }} /tmp/read-write-access-policy.json
+      args:
+        executable: /bin/bash
+
+    - name: Remove temporary policy file
+      file:
+        path: "/tmp/read-write-access-policy.json"
+        state: absent
+    - name: Check if bucket exists
+      command: mc ls {{ minio.alias }}/{{ minio.bucket.name }}
+      register: bucket_check
+      ignore_errors: true
+
+    - name: Create bucket if it doesn't exist
+      command: mc mb {{ minio.alias }}/{{ minio.bucket.name}}
+      when: bucket_check.rc != 0  # Create bucket only if the previous
+
+    - name: Create MinIO user
+      command: mc admin user add {{ minio.alias }} {{ minio.bucket.username }} {{ minio.bucket.password }}
+      register: user_creation
+
+    - name: Attach policy to user
+      command: mc admin policy attach {{ minio.alias }} read-write-policy_{{ minio.bucket.name }} --user {{ minio.bucket.username }}
+      when: user_creation.rc == 0  # Attach policy only if user creation was successful

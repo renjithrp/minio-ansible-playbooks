@@ -1,0 +1,22 @@
+- hosts: nginx  # Replace 'nginx_servers' with the appropriate host group
+  become: true  # Run tasks with elevated privileges
+  vars_files:
+    - ../vars/variables.yml
+
+  tasks:
+    - name: Install NGINX
+      package:
+        name: nginx
+        state: present  # Ensure NGINX is installed
+
+    - name: Copy NGINX configuration template
+      template:
+        src: ../templates/nginx_conf.j2  # Path to your NGINX configuration template
+        dest: /etc/nginx/sites-enabled/default  # Destination path for the NGINX configuration file
+      notify: Restart NGINX  # Notify handler to restart NGINX after copying config
+
+  handlers:
+    - name: Restart NGINX
+      service:
+        name: nginx
+        state: restarted  # Restart NGINX service after configuration change

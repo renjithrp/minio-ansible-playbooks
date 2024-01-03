@@ -1,0 +1,49 @@
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ["localhost:{{ prometheus.port | default('9090') }}"]
+
+  - job_name: minio-job
+    bearer_token: "{{ bearer_token | first }}"
+    metrics_path: /minio/v2/metrics/cluster
+    scheme: {{ minio.scheme | default('http') }}
+    static_configs:
+      - targets: 
+        - "{{ minio.server_url | regex_replace('^https?://', '') }}"
+  
+  - job_name: minio-job-node
+    bearer_token: "{{ bearer_token | first }}"
+    metrics_path: /minio/v2/metrics/node
+    scheme: {{ minio.scheme | default('http') }}
+    static_configs:
+      - targets: 
+        - "{{ minio.server_url | regex_replace('^https?://', '') }}"
+  
+  - job_name: minio-job-bucket
+    bearer_token: "{{ bearer_token | first }}"
+    metrics_path: /minio/v2/metrics/bucket
+    scheme: {{ minio.scheme | default('http') }}
+    static_configs:
+      - targets: 
+        - "{{ minio.server_url | regex_replace('^https?://', '') }}"
+
+  - job_name: minio-job-resource
+    bearer_token: "{{ bearer_token | first }}"
+    metrics_path: /minio/v2/metrics/resource
+    scheme: {{ minio.scheme | default('http') }}
+    static_configs:
+      - targets: 
+        - "{{ minio.server_url | regex_replace('^https?://', '') }}"
+  
+

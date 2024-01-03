@@ -1,0 +1,33 @@
+---
+- name: Install and Configure MinIO Client
+  hosts: prometheus
+  become: true
+  vars_files:
+    - ../vars/variables.yml
+  tasks:
+    - name: Add hosts to /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[item]['ansible_host'] }} {{ hostvars[item]['inventory_hostname'] }}"
+        state: present
+        create: yes
+      with_items: "{{ groups['all'] }}"
+
+    - name: Download MinIO Client
+      ansible.builtin.get_url:
+        url: "https://dl.min.io/client/mc/release/linux-amd64/mc"
+        dest: "/usr/local/bin/mc"
+        mode: "u+rwx,g+rx,o+rx"  # Set proper permissions
+      register: download_mc
+      ignore_errors: true  # Ignore errors in case download fails
+
+    - name: Set MinIO Client Alias
+      ansible.builtin.command: >
+        mc alias set {{ minio.alias | default('local') }}  "{{ minio.server_url }}" "{{ minio.admin_user }}" "{{ minio.admin_password }}"
+      environment:
+        MC_HOME: "/home/{{ ansible.user }}"  # Define MinIO Client home directory
+      become_user: "{{ ansible.user }}"  # Use the current Ansible user
+
+    - name: Display MinIO Admin Information
+      ansible.builtin.command: "mc admin info {{ minio.alias | default('local') }}"
+      become_user: "{{ ansible.user }}"  # Use the MinIO root user

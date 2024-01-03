@@ -1,0 +1,62 @@
+---
+- name: Deploy Minio package and configure user, update /etc/hosts, copy minio.env file, start Minio service
+  hosts: minio  # Assuming 'minio' is the group containing Minio servers
+  become: true  # To execute tasks with sudo
+  vars_files:
+    - ../vars/variables.yml
+
+  tasks:
+    - name: Create 'minio-user' group
+      group:
+        name: minio-user
+        state: present
+
+    - name: Create 'minio-user' user
+      user:
+        name: minio-user
+        group: minio-user
+        system: yes
+        shell: /sbin/nologin
+
+    - name: Change ownership of directories to 'minio-user'
+      file:
+        path: "{{ item }}"
+        owner: minio-user
+        group: minio-user
+        recurse: yes
+      loop: "{{ minio.disks }}"
+
+    - name: Download Minio deb package
+      get_url:
+        url: "https://dl.min.io/server/minio/release/linux-amd64/archive/{{ minio.package | default('minio_20231220010002.0.0_amd64.deb') }}"
+        dest: "/tmp/minio.deb"
+
+    - name: Install Minio package
+      apt:
+        deb: "/tmp/minio.deb"
+        state: present
+      become: true
+
+    - name: Update /etc/hosts with server names
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
+      loop: "{{ groups['minio'] + groups['prometheus'] }}"
+      become: true
+
+    - name: Create /etc/default/minio file
+      template:
+        src: ../templates/minio_config.j2
+        dest: /etc/default/minio
+
+    - name: Start Minio service
+      systemd:
+        name: minio.service
+        state: started
+        enabled: yes
+
+    - name: Check Minio service status
+      systemd:
+        name: minio.service
+        state: restarted
+

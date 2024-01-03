@@ -1,0 +1,17 @@
+- hosts: all
+  tasks:
+    - name: Set hostname to match Ansible node name
+      hostname:
+        name: "{{ inventory_hostname }}"
+      become: true
+
+    - name: Add hosts to /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[item]['ansible_host'] }} {{ hostvars[item]['inventory_hostname'] }}"
+        state: present
+        create: yes
+      with_items: "{{ groups['all'] }}"
+      become: true
+
+

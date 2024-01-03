@@ -1,0 +1,27 @@
+---
+- name: Update Prometheus Config with MinIO Scrape Job
+  hosts: prometheus
+  gather_facts: false
+  vars_files:
+    - ../vars/variables.yml
+  tasks:
+    - name: Run command to get bearer token
+      command: mc admin prometheus generate {{ minio.alias }}
+      register: bearer_token_output
+
+    - set_fact:
+        bearer_token: "{{ bearer_token_output.stdout | regex_search('bearer_token: (.+)', '\\1') }}"
+
+    - debug:
+        var: bearer_token
+
+    - name: Copy Prometheus config template to destination
+      template:
+        src: ../templates/prometheus_config.yml.j2
+        dest: /etc/prometheus/prometheus.yml
+      become: true
+    - name: Restart Prometheus
+      become: true
+      service:
+        name: prometheus  # Replace 'prometheus' with the actual service name
+        state: restarted
