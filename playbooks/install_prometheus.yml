@@ -22,8 +22,8 @@
 
     - name: Create "{{ prometheus.user }}" user
       user:
-        name: {{ prometheus.user }}"
-        group: {{ prometheus.group }}"
+        name: "{{ prometheus.user }}"
+        group: "{{ prometheus.group }}"
         system: yes
         shell: /sbin/nologin
 
