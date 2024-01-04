@@ -8,7 +8,7 @@ minio:
   port: 9000
   console_port: 9001
   scheme: "http"
-  volumes: "http://minio{1...4}:9000/data/disk{1...4}/minio http://minio{5...8}:9000/data/disk{1...4}/minio"
+  volumes: "http://minio{1...4}:9000/data/disk{1...4}/minio"
   opts: "--console-address :9001"
   server_url: "http://nginx01:8080"
   admin_user: "admin"
@@ -36,4 +36,12 @@ nginx:
 
 grafana:
   admin_password: "password"
+
+redis:
+  port: 6379
+
+connector:
+  repo_url: "https://github.com/renjithrp/dms-minio-connector"
+  install_script: "install.sh"
+  metrics_token: "random-token"
 

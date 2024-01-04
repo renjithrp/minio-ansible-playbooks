@@ -45,5 +45,15 @@ scrape_configs:
     static_configs:
       - targets: 
         - "{{ minio.server_url | regex_replace('^https?://', '') }}"
+
+  - job_name: minio-connector
+    bearer_token: "{{ connector.metrics_token }}"
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+        - "{{ groups['connectors']:9082 }}"
+
   
 

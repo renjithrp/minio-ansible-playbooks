@@ -1,0 +1,38 @@
+---
+- name: Install and configure Redis
+  hosts: redis
+  become: true
+  vars_files:
+    - ../vars/variables.yml
+
+  tasks:
+    - name: Install Redis on Debian/Ubuntu
+      apt:
+        name: redis-server
+        state: present
+      when: ansible_os_family == 'Debian' or ansible_os_family == 'Ubuntu'
+
+    - name: Install Redis on Red Hat/CentOS
+      yum:
+        name: redis
+        state: present
+      when: ansible_os_family == 'RedHat' or ansible_os_family == 'CentOS'
+
+    - name: Update Redis bind address to 0.0.0.0
+      lineinfile:
+        path: /etc/redis/redis.conf  # Replace with the path to your Redis configuration file
+        regexp: '^#?\s*bind\s+'
+        line: 'bind 0.0.0.0'
+
+    - name: Configure Redis to use "{{ redis.port }}"
+      lineinfile:
+        path: /etc/redis/redis.conf
+        regexp: '^port'
+        line: 'port {{ redis.port }}'
+      notify: Restart Redis
+
+  handlers:
+    - name: Restart Redis
+      service:
+        name: redis
+        state: restarted

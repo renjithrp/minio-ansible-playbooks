@@ -1,0 +1,43 @@
+---
+- name: Install dms minio connectors
+  hosts: connectors
+  gather_facts: false
+  vars_files:
+    - ../vars/variables.yml
+  
+  vars:
+    local_clone_path: "/usr/local/src/dms-minio-connector"
+
+  tasks:
+
+    - name: Remove source folder if exists
+      file:
+        path: "{{ local_clone_path }}"
+        state: absent
+      become: true
+
+    - name: Create local path if it doesn't exist
+      file:
+        path: "{{ local_clone_path }}"
+        state: directory
+        mode: '0755'
+      become: true
+
+    - name: Clone Git repository
+      git:
+        repo: "{{ connector.repo_url }}"
+        dest: "{{ local_clone_path }}"
+        clone: yes
+      become: true
+
+    - name: Generate connector env file
+      template:
+        src: ../templates/connector_env.j2
+        dest: "{{ local_clone_path }}/connector/env"
+      become: true
+
+    - name: Run install script
+      shell: "bash {{ connector.install_script }}"
+      args:
+        chdir: "{{ local_clone_path }}"
+      become: true
