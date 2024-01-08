@@ -1,0 +1,24 @@
+[prometheus]
+server1 ansible_host=192.168.1.150
+
+[minio]
+minio1 ansible_host=192.168.1.151
+minio2 ansible_host=192.168.1.152
+minio3 ansible_host=192.168.1.153
+minio4 ansible_host=192.168.1.154
+
+[nginx]
+nginx01 ansible_host=192.168.1.111
+
+[grafana]
+server1 ansible_host=192.168.1.150
+
+[redis]
+redis1 ansible_host=192.168.1.150
+
+[connectors]
+conn1 ansible_host=192.168.1.161
+conn2 ansible_host=192.168.1.162
+conn3 ansible_host=192.168.1.163
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
